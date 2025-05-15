@@ -1477,7 +1477,7 @@ class TcpServer
                 _timeout = timeout;
                 _enable_inactive_release = true;
             }
-            //用于添加一个定时任务
+            //用于在 _baseloop添加一个定时任务
             void RunAfter(const Functor &task, int delay)
             {
                 _baseloop.RunInLoop(std::bind(&TcpServer::RunAfterInLoop, this, task, delay));
