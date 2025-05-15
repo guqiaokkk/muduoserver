@@ -1420,7 +1420,7 @@ class TcpServer
         AnyEventCallback _event_callback;//当连接触发任意事件回调
 
     private:
-        //用于添加一个定时任务
+        //用于在 _baseloop添加一个定时任务
         void RunAfterInLoop(const Functor &task, int delay)
         {
             _next_id++;
@@ -1431,7 +1431,7 @@ class TcpServer
         void NewConnection(int fd)
         {
             _next_id++;
-            PtrConnection conn(new Connection(_pool.NextLoop(), _next_id, fd));
+            PtrConnection conn(new Connection(_pool.NextLoop(), _next_id, fd));//_pool.NextLoop() 返回EventLoop 对象
             conn->SetConnectedCallback(_connected_callback);
             conn->SetMessageCallback(_message_callback);
             conn->SetClosedCallback(_closed_callback);
@@ -1449,6 +1449,7 @@ class TcpServer
                 _conns.erase(id);
             }
         }
+        //在 _baseloop 中调度 RemoveConnectionInLoop 方法的执行
         void RemoveConnection(const PtrConnection &conn)
         {
             _baseloop.RunInLoop(std::bind(&TcpServer::RemoveConnectionInLoop, this, conn));
@@ -1481,6 +1482,7 @@ class TcpServer
             {
                 _baseloop.RunInLoop(std::bind(&TcpServer::RunAfterInLoop, this, task, delay));
             }
+            //启动线程池和事件循环
             void Start()
             {
                 _pool.Create();
