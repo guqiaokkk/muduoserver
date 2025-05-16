@@ -1,3 +1,5 @@
+#ifndef __M_SERVER_H__
+#define __M_SERVER_H__
 #include <iostream>
 #include <vector>
 #include <cassert>
@@ -19,6 +21,7 @@
 #include <mutex>
 #include <typeinfo>
 #include <condition_variable>
+#include <signal.h>
 
 
 #define INF 0
@@ -91,6 +94,7 @@ class Buffer
             else
             {
                  //总体空间不够，则需要扩容，不移动数据，直接给写偏移之后扩容足够空间即可
+                DBG_LOG("RESIZE %ld", _writer_idx + len);
                 _buffer.resize(_writer_idx + len);
             }
         }
@@ -195,7 +199,7 @@ class Socket
         int _sockfd;
     
     public:
-        Socket():_sockfd(0){}
+        Socket():_sockfd(-1){}
         Socket(int fd):_sockfd(fd){}
         ~Socket(){Close();}
         int Fd(){return _sockfd;}
@@ -326,10 +330,10 @@ class Socket
         {
             //1. 创建套接字，2. 绑定地址，3. 开始监听，4. 设置非阻塞， 5. 启动地址重用
             if(Create() == false)return false;
+            ReuseAddress();//在 Bind() 之前调用 ReuseAddress()，避免 TIME_WAIT 状态导致绑定失败
             if(block_flag) NonBlock();
             if(Bind(ip,port) == false) return false; 
             if(Listen() == false)return false;
-            ReuseAddress();
             return true;
         }
         //创建一个客户端连接
@@ -1300,7 +1304,7 @@ class Connection : public std::enable_shared_from_this<Connection>
         //连接建立就绪后，进行channel回调设置，启动读监控，调用_connected_callback
         void Established()
         {
-            _loop->RunInLoop(std::bind(&Connection::Established, this));
+            _loop->RunInLoop(std::bind(&Connection::EstablishedInLoop, this));
         }
 
         //发送数据，将数据放到发送缓冲区，启动写事件监控
@@ -1321,7 +1325,7 @@ class Connection : public std::enable_shared_from_this<Connection>
         }
         void Release()
         {
-            _loop->RunInLoop(std::bind(&Connection::ReleaseInLoop, this));
+            _loop->QueueInLoop(std::bind(&Connection::ReleaseInLoop, this));
         }
 
         //启动非活跃销毁，并定义多长时间无通信就是非活跃，添加定时任务
@@ -1437,6 +1441,9 @@ class TcpServer
             conn->SetClosedCallback(_closed_callback);
             conn->SetAnyEventCallback(_event_callback);
             conn->SetServerClosedCallback(std::bind(&TcpServer::RemoveConnection, this, std::placeholders::_1));
+            if(_enable_inactive_release)conn->EnableInactiveRelease(_timeout);//启动非活跃超时销毁
+            conn->Established();//就绪初始化
+            _conns.insert(std::make_pair(_next_id, conn));
         }
         
         //从管理Connection的_conns中移除连接信息
@@ -1446,7 +1453,7 @@ class TcpServer
             auto it = _conns.find(id);
             if(it != _conns.end())
             {
-                _conns.erase(id);
+                _conns.erase(it);
             }
         }
         //在 _baseloop 中调度 RemoveConnectionInLoop 方法的执行
@@ -1490,3 +1497,16 @@ class TcpServer
             }
 
 };
+
+class NetWork
+{
+    public:
+        NetWork()
+        {
+            DBG_LOG("SIGPIPE INIT");
+            signal(SIGPIPE, SIG_IGN);//忽略SIGPIPIE
+        }
+};
+static NetWork nw;//为了调用他的构造函数
+
+#endif
