@@ -614,6 +614,7 @@ class HttpContext
         bool RecvHttpLine(Buffer *buf)
         {
             if(_recv_statu != RECV_HTTP_LINE) return false;
+        
             //1. 获取一行数据，带有末尾的换行
             std::string line = buf->GetLineAndPop();
             //2. 需要考虑的一些要素：缓冲区中的数据不足一行(此时line:"")， 获取的一行数据超大
@@ -643,6 +644,7 @@ class HttpContext
             }
             //首行处理完毕，进入头部获取阶段
             _recv_statu = RECV_HTTP_HEAD;
+            //std::cout << "首行解析完" << std::endl;
             return true;
         }
 
@@ -687,7 +689,8 @@ class HttpContext
                 }
             }
             //头部处理完毕，进入正文获取阶段
-            _recv_statu == RECV_HTTP_BODY;
+            _recv_statu = RECV_HTTP_BODY;
+            // std::cout << "头部解析完" << std::endl;
             return true;
         }
 
@@ -713,9 +716,11 @@ class HttpContext
         //正文接收
          bool RecvHttpBody(Buffer *buf)
         {
+            //std::cout << "content_length:" << std::endl;
             if(_recv_statu != RECV_HTTP_BODY) return false;
             //1. 获取正文长度
             size_t content_length = _request.ContentLength();
+            //std::cout << "content_length:" << content_length << std::endl;
             if(content_length == 0)
             {
                 //没有正文，则请求接收解析完毕
@@ -759,9 +764,9 @@ class HttpContext
             //不同的状态，做不同的事情，但是这里不要break， 因为处理完请求行后，应该立即处理头部，而不是退出等新数据
             switch(_recv_statu)
             {
-                case RECV_HTTP_LINE: RecvHttpLine(buf);
-                case RECV_HTTP_HEAD: RecvHttpHead(buf);
-                case RECV_HTTP_BODY: RecvHttpBody(buf);
+                case RECV_HTTP_LINE: RecvHttpLine(buf);//printf("首行解析完\n");
+                case RECV_HTTP_HEAD: RecvHttpHead(buf); //printf("头部接受完\n");
+                case RECV_HTTP_BODY: RecvHttpBody(buf);//printf("正文接受完\n");
             }
             return;
         }
@@ -947,6 +952,7 @@ class HttpServer
         //缓冲区数据解析+处理   消息回调函数
         void OnMessage(const PtrConnection &conn, Buffer *buf)
         {
+            //std::cout << "OnMessage" << std::endl;
             while (buf->ReadAbleSize() > 0)
             {
                 //1. 获取上下文

@@ -8,16 +8,20 @@ std::string RequestStr(const HttpRequest &req) {
     for (auto &it : req._params) {
         ss << it.first << ": " << it.second << "\r\n";
     }
+
     for (auto &it : req._headers) {
         ss << it.first << ": " << it.second << "\r\n";
     }
+
     ss << "\r\n";
     ss << req._body;
     return ss.str();
+
 }
 void Hello(const HttpRequest &req, HttpResponse *rsp) 
 {
     rsp->SetContent(RequestStr(req), "text/plain");
+    sleep(15);
 }
 void Login(const HttpRequest &req, HttpResponse *rsp) 
 {
@@ -31,9 +35,11 @@ void PutFile(const HttpRequest &req, HttpResponse *rsp)
 void DelFile(const HttpRequest &req, HttpResponse *rsp) 
 {
     rsp->SetContent(RequestStr(req), "text/plain");
+
 }
 int main()
 {
+
     HttpServer server(8888);
     server.SetThreadCount(3);
     server.SetBaseDir(WWWROOT);//设置静态资源根目录，告诉服务器有静态资源请求到来，需要到哪里去找资源文件

@@ -286,6 +286,7 @@ class Socket
                 {
                     return 0;//表示这次接收没有接收到数据
                 }
+                perror("error: \n");
                 ERR_LOG("SOCKET RECV FAILED!!");
                 return -1;
             }
@@ -1092,6 +1093,7 @@ class Connection : public std::enable_shared_from_this<Connection>
         //描述符可读事件触发后调用的函数，接收socket数据放到接收缓冲区中，然后调用_message_callback
         void HandleRead()
         {
+            //std::cout << "HandleRead" << std::endl;
             //1. 接收socket的数据，放到缓冲区
             char buf[65536];
             ssize_t ret = _socket.NonBlockRecv(buf, 65535);
@@ -1175,6 +1177,7 @@ class Connection : public std::enable_shared_from_this<Connection>
             _statu = CONNECTED;//当前函数执行完毕，则连接进入已完成连接状态
             // 一旦启动读事件监控就有可能会立即触发读事件，如果这时候启动了非活跃连接销毁可能会有问题
             _channel.EnableRead();
+            std::cout << "连接建立成功， 开始启动读事件: " << _channel.Fd() << std::endl;
             if(_connected_callback) _connected_callback(shared_from_this());
         }
         
