@@ -21,7 +21,6 @@ std::string RequestStr(const HttpRequest &req) {
 void Hello(const HttpRequest &req, HttpResponse *rsp) 
 {
     rsp->SetContent(RequestStr(req), "text/plain");
-    sleep(15);
 }
 void Login(const HttpRequest &req, HttpResponse *rsp) 
 {

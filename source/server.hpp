@@ -286,7 +286,7 @@ class Socket
                 {
                     return 0;//表示这次接收没有接收到数据
                 }
-                perror("error: \n");
+                //perror("error: \n");
                 ERR_LOG("SOCKET RECV FAILED!!");
                 return -1;
             }
@@ -537,7 +537,7 @@ class Poller
                 {
                     return;
                 }
-                ERR_LOG("EPOLL WAIT ERROR:%s\n", strerror(errno));
+                //ERR_LOG("EPOLL WAIT ERROR:%s\n", strerror(errno));
                 abort();//退出程序
             }
             //遍历 epoll_wait 返回的事件，更新每个 Channel 对象的实际就绪事件，并将它们添加到 actives 向量中
